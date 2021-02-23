@@ -58,6 +58,7 @@ class DMDocuments(interface.Documents):
 
     def _serialize(self, reg, adjacency_map):
         ret = {
+            'version': reg.version,
             'label': reg.label_string.split('-'),
             'text': reg.text,
             'node_type': reg.node_type,
