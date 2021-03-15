@@ -17,7 +17,7 @@ REGULATION_SCHEMA = {
         'children': {
             'type': 'array',
             'additionalItems': False,
-            'items': {'$ref': 'reg_tree_node'}
+            'items': {'type': 'object'}
         },
         'label': {
             'type': 'array',
