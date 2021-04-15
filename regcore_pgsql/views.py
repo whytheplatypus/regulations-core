@@ -20,8 +20,7 @@ def matching_sections(search_args):
     if search_args.regulation:
         sections_query = sections_query.filter(
             documentindex__doc_root=search_args.regulation)
-    # can't filter regulation yet
-    return sections_query
+    return sections_query.only_latest()
 
 
 @requires_search_args
@@ -61,5 +60,6 @@ def transform_results(sections, search_terms):
             'paragraph_title': text_node.title if text_node else '',
             'section_title': section.title,
             'title': section.title,
+            'effective_on': str(section.effective_on),
         })
     return final_results

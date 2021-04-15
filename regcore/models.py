@@ -1,7 +1,33 @@
 from django.db import models
-from mptt.models import MPTTModel, TreeForeignKey
+from mptt.models import MPTTModel, TreeForeignKey, TreeManager
+from mptt.querysets import TreeQuerySet
 
 from regcore.fields import CompressedJSONField
+
+
+class DocumentQuerySet(TreeQuerySet):
+    def only_latest(self):
+        notice = Notice.objects.filter(document_number=models.OuterRef('version'))
+        notice = notice.order_by('-effective_on')
+        q = self.annotate(effective_on=models.Subquery(notice.values('effective_on')[:1]))
+        q = q.order_by('label_string', '-effective_on')
+        q = q.distinct('label_string')
+        return q
+
+
+class DocumentManager(TreeManager):
+
+    def get_queryset(self, *args, **kwargs):
+        return DocumentQuerySet(self.model, using=self._db).order_by(self.tree_id_attr, self.left_attr)
+
+    def only_latest(self):
+        notice = Notice.objects.filter(document_number=models.OuterRef('version'))
+        notice = notice.order_by('-effective_on')
+        sections_query = self.annotate(effective_on=models.Subquery(notice.values('effective_on')[:1]))
+        sections_query = sections_query.order_by('label_string', '-effective_on')
+        sections_query = sections_query.distinct('label_string')
+        return self.filter(id__in=models.Subquery(sections_query.values('id')))\
+            .annotate(effective_on=models.Subquery(notice.values('effective_on')[:1]))
 
 
 class Document(MPTTModel):
@@ -15,6 +41,8 @@ class Document(MPTTModel):
     title = models.TextField(blank=True)
     node_type = models.SlugField(max_length=30)
     root = models.BooleanField(default=False, db_index=True)
+
+    objects = DocumentManager()
 
     class Meta:
         index_together = (('doc_type', 'version', 'label_string'),)

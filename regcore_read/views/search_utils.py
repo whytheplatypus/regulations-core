@@ -6,7 +6,7 @@ from webargs.djangoparser import parser
 
 from regcore.responses import user_error
 
-MAX_PAGE_SIZE = 50
+MAX_PAGE_SIZE = 500
 
 search_args = {
     'q': fields.Str(required=True),
