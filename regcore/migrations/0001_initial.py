@@ -46,7 +46,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('cfr_part', models.SlugField(max_length=10)),
-                ('notice', models.ForeignKey(to='regcore.Notice')),
+                ('notice', models.ForeignKey(to='regcore.Notice', on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
