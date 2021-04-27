@@ -1,7 +1,10 @@
 from rest_framework import generics, serializers
 from django.db import models
 
-from regcore.models import Part
+from regcore.models import Part, SearchContext
+from django.contrib.postgres.search import SearchVector
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -80,7 +83,21 @@ class EffectivePartView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         title = self.kwargs.get("title")
         date = self.kwargs.get("date")
-        return Part.objects.filter(title=title).filter(date__lte=date)
+        return Part.objects.filter(title=title)
     
     def get_object(self):
         return self.get_queryset().filter(name=self.kwargs.get(self.lookup_field)).latest("date")
+
+
+class SearchViewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SearchContext
+        fields = "__all__"
+
+
+class SearchView(generics.ListAPIView):
+    serializer_class = SearchViewSerializer
+
+    def get_queryset(self):
+        q = self.request.query_params.get("q")
+        return SearchContext.objects.order_by("part__name", "-part__date").distinct("part__name").filter(content__search=q)

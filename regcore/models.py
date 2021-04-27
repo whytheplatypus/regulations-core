@@ -1,9 +1,12 @@
 from django.db import models
 
+from django.contrib.postgres.fields import ArrayField
+from django.db.models.signals import post_save
 from mptt.models import MPTTModel, TreeForeignKey, TreeManager
 from mptt.querysets import TreeQuerySet
 
 from regcore.fields import CompressedJSONField
+
 
 
 class Part(models.Model):
@@ -16,6 +19,39 @@ class Part(models.Model):
 
     class Meta:
         unique_together = ['name', 'title', 'date']
+
+
+class SearchContext(models.Model):
+    type = models.CharField(max_length=30)
+    label = models.CharField(max_length=50)
+    content = models.TextField()
+    part = models.ForeignKey(Part, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ['label', 'part']
+
+
+def create_search(part, piece, list):
+    for child in piece.get("children", []) or []:
+        try:
+            list.append(SearchContext(
+                label = "-".join(child["label"]),
+                part = part,
+                type = child["node_type"],
+                content = child.get("text") or child.get("title"),
+            ))
+        except KeyError:
+            pass
+        list = list + create_search(part, child, [])
+    return list
+
+
+def update_search(sender, instance, created, **kwargs):
+    if created:
+        contexts = create_search(instance, instance.document, [])
+        SearchContext.objects.bulk_create(contexts, ignore_conflicts=True)
+
+post_save.connect(update_search, sender=Part)
 
 
 class DocumentQuerySet(TreeQuerySet):

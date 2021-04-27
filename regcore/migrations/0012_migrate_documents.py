@@ -176,6 +176,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(copy_regulations, uncopy_regulations),
-        migrations.RunPython(copy_preambles, uncopy_preambles),
+        #migrations.RunPython(copy_regulations, uncopy_regulations),
+        #migrations.RunPython(copy_preambles, uncopy_preambles),
     ]
