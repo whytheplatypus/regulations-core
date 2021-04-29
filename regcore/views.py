@@ -8,12 +8,6 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 
 
-class PartSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Part
-        fields = "__all__"
-
-
 class ListPartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Part
@@ -21,14 +15,6 @@ class ListPartSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'document': {'write_only': True}
         }
-
-
-class ListEffectivePartSerializer(serializers.ModelSerializer):
-    document_title = serializers.CharField(source="document__title", read_only=True)
-
-    class Meta:
-        model = Part
-        fields = ("name", "title", "date", "last_updated", "structure", "document_title")
 
 
 class PartsView(generics.ListCreateAPIView):
@@ -52,12 +38,20 @@ class PartsView(generics.ListCreateAPIView):
         return super().create(request, *args, **kwargs)
 
 
+class ListEffectivePartSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Part
+        fields = ("name", "title", "date", "last_updated", "structure")
+
+
 class EffectiveTitlesView(generics.ListAPIView):
     serializer_class = ListEffectivePartSerializer
 
     def get_queryset(self):
         date = self.kwargs.get("date")
-        return Part.objects.filter(date__lte=date).order_by("name", "-date").distinct("name").values("name", "title", "date", "last_updated", "structure", "document__title")
+        return Part.objects.filter(date__lte=date).order_by("name", "-date").distinct("name")
+
 
 class EffectivePartsView(generics.ListAPIView):
     serializer_class = ListEffectivePartSerializer
@@ -66,6 +60,12 @@ class EffectivePartsView(generics.ListAPIView):
         title = self.kwargs.get("title")
         date = self.kwargs.get("date")
         return Part.objects.filter(title=title).filter(date__lte=date).order_by("name", "-date").distinct("name")
+
+
+class PartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Part
+        fields = "__all__"
 
 
 class EffectivePartView(generics.RetrieveUpdateDestroyAPIView):
