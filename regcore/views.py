@@ -21,7 +21,12 @@ class PartsView(generics.ListCreateAPIView):
     serializer_class = ListPartSerializer
 
     def get_queryset(self):
-        return Part.objects.all()
+        query = Part.objects.all()
+        part = self.kwargs.get("name")
+        title = self.kwargs.get("title")
+        if part and title:
+            query = query.filter(name=part).filter(title=title)
+        return query
     
     def create(self, request, *args, **kwargs):
         query = Part.objects.filter(
