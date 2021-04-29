@@ -1,4 +1,5 @@
 from django.db import models
+
 from mptt.models import MPTTModel, TreeForeignKey, TreeManager
 from mptt.querysets import TreeQuerySet
 
@@ -11,6 +12,7 @@ class Part(models.Model):
     date = models.DateField()
     last_updated = models.DateTimeField(auto_now=True)
     document = models.JSONField()
+    structure = models.JSONField()
 
     class Meta:
         unique_together = ['name', 'title', 'date']

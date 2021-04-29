@@ -1,5 +1,11 @@
 from rest_framework import generics, serializers
+from django.db import models
+
 from regcore.models import Part
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 
 
 class PartSerializer(serializers.ModelSerializer):
@@ -18,7 +24,6 @@ class ListPartSerializer(serializers.ModelSerializer):
 
 
 class ListEffectivePartSerializer(serializers.ModelSerializer):
-    structure = serializers.JSONField(source="document__structure", read_only=True)
     document_title = serializers.CharField(source="document__title", read_only=True)
 
     class Meta:
@@ -31,13 +36,28 @@ class PartsView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         return Part.objects.all()
+    
+    def create(self, request, *args, **kwargs):
+        query = Part.objects.filter(
+            name=request.data.get("name"),
+            title=request.data.get("title"),
+            date=request.data.get("date"),
+        )
+        if query.exists():
+            serializer = self.get_serializer(query.get(), data=request.data, partial=False)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+        
+        return super().create(request, *args, **kwargs)
+
 
 class EffectiveTitlesView(generics.ListAPIView):
     serializer_class = ListEffectivePartSerializer
 
     def get_queryset(self):
         date = self.kwargs.get("date")
-        return Part.objects.filter(date__lte=date).order_by("name", "-date").distinct("name").values("name", "title", "date", "last_updated", "document__structure", "document__title")
+        return Part.objects.filter(date__lte=date).order_by("name", "-date").distinct("name").values("name", "title", "date", "last_updated", "structure", "document__title")
 
 class EffectivePartsView(generics.ListAPIView):
     serializer_class = ListEffectivePartSerializer
@@ -45,34 +65,17 @@ class EffectivePartsView(generics.ListAPIView):
     def get_queryset(self):
         title = self.kwargs.get("title")
         date = self.kwargs.get("date")
-        return Part.objects.filter(date__lte=date).order_by("name", "-date").distinct("name")
+        return Part.objects.filter(title=title).filter(date__lte=date).order_by("name", "-date").distinct("name")
 
-class PartView(generics.RetrieveUpdateDestroyAPIView):
+
+class EffectivePartView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PartSerializer
     lookup_field = "name"
 
     def get_queryset(self):
         title = self.kwargs.get("title")
         date = self.kwargs.get("date")
-        return Part.objects.filter(date=date).filter(title=title)
-
-class CurrentPartView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = PartSerializer
-    lookup_field = "name"
-
-    def get_queryset(self):
-        title = self.kwargs.get("title")
-        return Part.objects.filter(title=title)
-
-    def get_object(self, *args, **kwargs):
-        return self.get_queryset().filter(name=self.kwargs.get('name')).latest('date')
-
-# class PartView(views.RetrieveModelMixin, views.UpdateModelMixin, views.DeleteModelMixin, views.views.GenericAPIView):
+        return Part.objects.filter(title=title).filter(date__lte=date)
     
-#     serializer_class = PartSerializer
-
-#     def get_queryset(self):
-#         date = self.kwargs.get("date")
-#         title = self.kwargs.get("title")
-#         part = self.kwargs.get("part")
-#         return Part.objects.filter(date=date, title=title, part=part)
+    def get_object(self):
+        return self.get_queryset().filter(name=self.kwargs.get(self.lookup_field)).latest("date")
