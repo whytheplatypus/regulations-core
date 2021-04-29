@@ -1,10 +1,12 @@
 from rest_framework import generics, serializers
 from django.db import models
 
-from regcore.models import Part, SearchContext
-from django.contrib.postgres.search import SearchVector
+from regcore.models import Part, SearchIndex
+from django.contrib.postgres.search import SearchQuery, SearchRank, SearchHeadline
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -83,16 +85,20 @@ class EffectivePartView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         title = self.kwargs.get("title")
         date = self.kwargs.get("date")
-        return Part.objects.filter(title=title)
+        return Part.objects.filter(title=title).filter(date__lte=date)
     
     def get_object(self):
         return self.get_queryset().filter(name=self.kwargs.get(self.lookup_field)).latest("date")
 
 
 class SearchViewSerializer(serializers.ModelSerializer):
+    headline = serializers.CharField()
+    regulation_title = serializers.CharField(source="part__document__title")
+    date = serializers.DateField(source="part__date")
+
     class Meta:
-        model = SearchContext
-        fields = "__all__"
+        model = SearchIndex
+        fields = ("type", "content", "headline", "label", "regulation_title", "date")
 
 
 class SearchView(generics.ListAPIView):
@@ -100,4 +106,17 @@ class SearchView(generics.ListAPIView):
 
     def get_queryset(self):
         q = self.request.query_params.get("q")
-        return SearchContext.objects.order_by("part__name", "-part__date").distinct("part__name").filter(content__search=q)
+        return SearchIndex.objects\
+            .filter(part__in=models.Subquery(Part.objects.order_by("name", "-date").distinct("name").values("id")))\
+            .filter(search_vector=SearchQuery(q))\
+            .annotate(rank=SearchRank("search_vector", SearchQuery(q)))\
+            .annotate(
+                headline=SearchHeadline(
+                    "content",
+                    SearchQuery(q),
+                    start_sel='<span class="search-highlight">',
+                    stop_sel='</span>',
+                ),
+            )\
+            .order_by('-rank')\
+            .values("type", "content", "headline", "label", "part__document__title", "part__date")

@@ -1,6 +1,8 @@
 from django.db import models
 
 from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.search import SearchVector, SearchVectorField
+
 from django.db.models.signals import post_save
 from mptt.models import MPTTModel, TreeForeignKey, TreeManager
 from mptt.querysets import TreeQuerySet
@@ -21,35 +23,38 @@ class Part(models.Model):
         unique_together = ['name', 'title', 'date']
 
 
-class SearchContext(models.Model):
+class SearchIndex(models.Model):
     type = models.CharField(max_length=30)
-    label = models.CharField(max_length=50)
+    label = ArrayField(base_field=models.CharField(max_length=8))
     content = models.TextField()
     part = models.ForeignKey(Part, on_delete=models.CASCADE)
+    search_vector = SearchVectorField()
 
     class Meta:
         unique_together = ['label', 'part']
 
 
-def create_search(part, piece, list):
+def create_search(part, piece, memo):
+    try:
+        memo.append(SearchIndex(
+            label = piece["label"],
+            part = part,
+            type = piece["node_type"],
+            content = piece.get("text") or piece.get("title"),
+        ))
+    except KeyError:
+        pass
+
     for child in piece.get("children", []) or []:
-        try:
-            list.append(SearchContext(
-                label = "-".join(child["label"]),
-                part = part,
-                type = child["node_type"],
-                content = child.get("text") or child.get("title"),
-            ))
-        except KeyError:
-            pass
-        list = list + create_search(part, child, [])
-    return list
+        create_search(part, child, memo)
+    return memo
 
 
 def update_search(sender, instance, created, **kwargs):
-    if created:
-        contexts = create_search(instance, instance.document, [])
-        SearchContext.objects.bulk_create(contexts, ignore_conflicts=True)
+    SearchIndex.objects.filter(part=instance).delete()
+    contexts = create_search(instance, instance.document, [])
+    SearchIndex.objects.bulk_create(contexts, ignore_conflicts=True)
+    SearchIndex.objects.filter(part=instance).update(search_vector=SearchVector('content'))
 
 post_save.connect(update_search, sender=Part)
 
