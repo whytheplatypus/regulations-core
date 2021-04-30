@@ -31,7 +31,7 @@ class Part(models.Model):
 def _walk_structure(struct, label):
     if struct.get('label') == label:
         return struct
-    for part in struct.get('children'):
+    for part in struct.get('children', []) or []:
         result = _walk_structure(part, label)
         if result:
             return result
@@ -39,9 +39,9 @@ def _walk_structure(struct, label):
 
 class SearchIndex(models.Model):
     type = models.CharField(max_length=30)
-    label = ArrayField(base_field=models.CharField(max_length=8))
+    label = ArrayField(base_field=models.CharField(max_length=32))
     content = models.TextField()
-    parent = models.JSONField()
+    parent = models.JSONField(null=True)
     part = models.ForeignKey(Part, on_delete=models.CASCADE)
     search_vector = SearchVectorField()
 
@@ -49,20 +49,21 @@ class SearchIndex(models.Model):
         unique_together = ['label', 'part']
 
 
-def create_search(part, piece, memo):
+def create_search(part, piece, memo, parent=None, ):
     try:
         memo.append(SearchIndex(
             label = piece["label"],
             part = part,
-            parent = part.find_in_structure(piece["label"]),
+            parent = parent,
             type = piece["node_type"],
             content = piece.get("text") or piece.get("title"),
         ))
     except KeyError:
         pass
 
-    for child in piece.get("children", []) or []:
-        create_search(part, child, memo)
+    children = piece.pop("children", []) or []
+    for child in children:
+        create_search(part, child, memo, parent=piece)
     return memo
 
 

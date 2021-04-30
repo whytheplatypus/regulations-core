@@ -98,7 +98,7 @@ class SearchViewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SearchIndex
-        fields = ("type", "content", "headline", "label", "regulation_title", "date")
+        fields = ("type", "content", "headline", "label", "parent", "regulation_title", "date")
 
 
 class SearchView(generics.ListAPIView):
@@ -119,4 +119,4 @@ class SearchView(generics.ListAPIView):
                 ),
             )\
             .order_by('-rank')\
-            .values("type", "content", "headline", "label", "part__document__title", "part__date")
+            .values("type", "content", "headline", "label", "parent", "part__document__title", "part__date")
