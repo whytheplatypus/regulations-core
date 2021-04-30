@@ -22,11 +22,26 @@ class Part(models.Model):
     class Meta:
         unique_together = ['name', 'title', 'date']
 
+    def find_in_structure(self, label):
+        return _walk_structure(self.structure, label)
+
+    def find_in_document(self, label):
+        return _walk_structure(self.document, label)
+    
+def _walk_structure(struct, label):
+    if struct.get('label') == label:
+        return struct
+    for part in struct.get('children'):
+        result = _walk_structure(part, label)
+        if result:
+            return result
+            
 
 class SearchIndex(models.Model):
     type = models.CharField(max_length=30)
     label = ArrayField(base_field=models.CharField(max_length=8))
     content = models.TextField()
+    parent = models.JSONField()
     part = models.ForeignKey(Part, on_delete=models.CASCADE)
     search_vector = SearchVectorField()
 
@@ -39,6 +54,7 @@ def create_search(part, piece, memo):
         memo.append(SearchIndex(
             label = piece["label"],
             part = part,
+            parent = part.find_in_structure(piece["label"]),
             type = piece["node_type"],
             content = piece.get("text") or piece.get("title"),
         ))
