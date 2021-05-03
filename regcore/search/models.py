@@ -7,7 +7,7 @@ from regcore.models import Part
 
 
 class SearchIndex(models.Model):
-    type = models.CharField(max_length=30)
+    type = models.CharField(max_length=32)
     label = ArrayField(base_field=models.CharField(max_length=32))
     content = models.TextField()
     parent = models.JSONField(null=True)

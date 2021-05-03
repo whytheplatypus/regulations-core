@@ -1,3 +1,5 @@
+from datetime import date
+
 from rest_framework import generics, serializers
 from django.db import models
 
@@ -26,7 +28,7 @@ class SearchView(generics.ListAPIView):
     def get_queryset(self):
         q = self.request.query_params.get("q")
         return SearchIndex.objects\
-            .filter(part__in=models.Subquery(Part.objects.order_by("name", "-date").distinct("name").values("id")))\
+            .filter(part__in=models.Subquery(Part.objects.effective(date.today()).values("id")))\
             .filter(search_vector=SearchQuery(q))\
             .annotate(rank=SearchRank("search_vector", SearchQuery(q)))\
             .annotate(
