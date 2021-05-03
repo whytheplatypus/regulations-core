@@ -6,7 +6,6 @@ from mptt.querysets import TreeQuerySet
 from regcore.fields import CompressedJSONField
 
 
-
 class Part(models.Model):
     name = models.CharField(max_length=8)
     title = models.CharField(max_length=8)

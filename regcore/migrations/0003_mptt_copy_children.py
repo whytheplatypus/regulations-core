@@ -108,5 +108,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        #migrations.RunPython(rebuild),
+        migrations.RunPython(rebuild),
     ]
