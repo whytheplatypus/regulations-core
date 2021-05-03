@@ -2,8 +2,8 @@ from rest_framework import generics, serializers
 from django.db import models
 
 from regcore.models import Part
-from rest_framework.views import APIView
 
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 
