@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     'haystack',
     'rest_framework',
     'regcore',
+    'regcore.search',
     'regcore_read',
     'regcore_write',
 ]
