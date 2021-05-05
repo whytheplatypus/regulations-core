@@ -10,10 +10,13 @@ ALLOWED_HOSTS = [
 ]
 
 INSTALLED_APPS = [
+    'django.contrib.auth',
     'django.contrib.contenttypes',
     'mptt',
     'haystack',
+    'rest_framework',
     'regcore',
+    'regcore.search',
     'regcore_read',
     'regcore_write',
 ]
@@ -21,6 +24,11 @@ MIDDLEWARE_CLASSES = []
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', get_random_string(50))
 
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    )
+}
 
 DATABASES = {
     'default': {

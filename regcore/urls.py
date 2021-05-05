@@ -7,6 +7,7 @@ from collections import defaultdict
 
 from django.conf import settings
 from django.utils.module_loading import import_string
+from django.urls import path, include
 
 from regcore.urls_utils import by_verb_url
 from regcore_read.views import diff as rdiff
@@ -78,4 +79,22 @@ urlpatterns = [
                 kwargs={'doc_type': 'cfr'}),
     by_verb_url(r'^search/preamble$', 'search', mapping['search'],
                 kwargs={'doc_type': 'preamble'}),
+]
+
+from regcore.views import (
+    EffectivePartView,
+    EffectiveTitlesView,
+    EffectivePartsView,
+    PartsView,
+)
+
+urlpatterns = urlpatterns + [
+    path("v2/", include([
+        path("", include('regcore.search.urls')),
+        path("", PartsView.as_view()),
+        path("title/<title>/part/<name>", PartsView.as_view()),
+        path("<date>", EffectiveTitlesView.as_view()),
+        path("<date>/title/<title>", EffectivePartsView.as_view()),
+        path("<date>/title/<title>/part/<name>", EffectivePartView.as_view()),
+    ]))
 ]
