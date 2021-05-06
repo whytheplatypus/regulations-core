@@ -1,11 +1,27 @@
 from rest_framework import generics, serializers
 from django.db import models
+from django.conf import settings
 
 from regcore.models import Part
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
+
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework import authentication
+from rest_framework import exceptions
+
+class SettingsUser:
+    is_authenticated = False
+
+class SettingsAuthentication(authentication.BasicAuthentication):
+    def authenticate_credentials(self, userid, password, request=None):
+        if userid == settings.HTTP_AUTH_USER and password == settings.HTTP_AUTH_PASSWORD:
+            user = SettingsUser()
+            user.is_authenticated = True
+            return (user, None)
+        raise exceptions.AuthenticationFailed('No such user')
 
 
 class ListPartSerializer(serializers.ModelSerializer):
@@ -19,6 +35,8 @@ class ListPartSerializer(serializers.ModelSerializer):
 
 class PartsView(generics.ListCreateAPIView):
     serializer_class = ListPartSerializer
+    authentication_classes = [SettingsAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
         query = Part.objects.all()
@@ -74,6 +92,9 @@ class PartSerializer(serializers.ModelSerializer):
 
 
 class EffectivePartView(generics.RetrieveUpdateDestroyAPIView):
+    authentication_classes = [SettingsAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
     serializer_class = PartSerializer
     lookup_field = "name"
 
