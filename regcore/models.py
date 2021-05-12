@@ -28,6 +28,10 @@ class Part(models.Model):
     class Meta:
         unique_together = ['name', 'title', 'date']
 
+    @property
+    def toc(self):
+        return self.structure['children'][0]['children'][0]['children'][0]
+
 
 class DocumentQuerySet(TreeQuerySet):
     def only_latest(self):
