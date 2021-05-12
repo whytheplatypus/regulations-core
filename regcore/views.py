@@ -43,9 +43,9 @@ class PartsView(generics.ListCreateAPIView):
         part = self.kwargs.get("name")
         title = self.kwargs.get("title")
         if part and title:
-            query = query.filter(name=part).filter(title=title)
+            query = query.filter(name=part).filter(title=title).order_by('-date')
         return query
-    
+
     def create(self, request, *args, **kwargs):
         query = Part.objects.filter(
             name=request.data.get("name"),
@@ -57,7 +57,7 @@ class PartsView(generics.ListCreateAPIView):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
-        
+
         return super().create(request, *args, **kwargs)
 
 
@@ -102,6 +102,6 @@ class EffectivePartView(generics.RetrieveUpdateDestroyAPIView):
         title = self.kwargs.get("title")
         date = self.kwargs.get("date")
         return Part.objects.filter(title=title).filter(date__lte=date)
-    
+
     def get_object(self):
         return self.get_queryset().filter(name=self.kwargs.get(self.lookup_field)).latest("date")
