@@ -19,20 +19,23 @@ class SearchIndex(models.Model):
 
 
 def create_search(part, piece, memo, parent=None, ):
-    try:
-        memo.append(SearchIndex(
+    if piece.get("node_type", None) == "SECTION":
+        si = SearchIndex(
             label = piece["label"],
             part = part,
-            parent = parent,
+            parent = piece,
             type = piece["node_type"],
-            content = piece.get("text") or piece.get("title"),
-        ))
-    except KeyError:
-        pass
+            content = piece.get("title", piece.get("text", "")),
+        )
+        children = piece.pop("children", []) or []
+        for child in children:
+            si.content = si.content + child.get("text", "")
+        memo.append(si)
+    else:
+        children = piece.pop("children", []) or []
+        for child in children:
+            create_search(part, child, memo, parent=piece)
 
-    children = piece.pop("children", []) or []
-    for child in children:
-        create_search(part, child, memo, parent=piece)
     return memo
 
 
