@@ -11,13 +11,10 @@ ALLOWED_HOSTS = [
 
 INSTALLED_APPS = [
     'django.contrib.contenttypes',
-    'mptt',
-    'haystack',
     'rest_framework',
     'regcore',
     'regcore.search',
-    'regcore_read',
-    'regcore_write',
+    'django.contrib.postgres',
 ]
 MIDDLEWARE_CLASSES = []
 
@@ -50,15 +47,6 @@ DEBUG = True
 # If a key is not set, defaults to regcore.db.django_models versions
 BACKENDS = {}
 
-ELASTIC_SEARCH_URLS = []
-ELASTIC_SEARCH_INDEX = 'eregs'
-
-HAYSTACK_CONNECTIONS = {
-    'default': {
-        'ENGINE': 'haystack.backends.simple_backend.SimpleEngine',
-    }
-}
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -80,8 +68,6 @@ LOGGING = {
         }
     }
 }
-
-SEARCH_HANDLER = 'regcore_read.views.haystack_search.search'
 
 # Batch size used in `bulk_create`; defaults to a conservative value to avoid
 # hitting SQLite limits
