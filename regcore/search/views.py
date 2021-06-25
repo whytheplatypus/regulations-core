@@ -15,11 +15,12 @@ from rest_framework.exceptions import ValidationError
 class SearchViewSerializer(serializers.ModelSerializer):
     headline = serializers.CharField()
     regulation_title = serializers.CharField(source="part__document__title")
+    title = serializers.CharField(source="part__title")
     date = serializers.DateField(source="part__date")
 
     class Meta:
         model = SearchIndex
-        fields = ("type", "content", "headline", "label", "parent", "regulation_title", "date")
+        fields = ("type", "content", "headline", "label", "parent", "regulation_title", "title", "date")
 
 
 class SearchView(generics.ListAPIView):
@@ -40,4 +41,4 @@ class SearchView(generics.ListAPIView):
                 ),
             )\
             .order_by('-rank')\
-            .values("type", "content", "headline", "label", "parent", "part__document__title", "part__date")
+            .values("type", "content", "headline", "label", "parent", "part__document__title", "part__title", "part__date")
